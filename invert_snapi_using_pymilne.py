@@ -2,9 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import pyana 
 from astropy.io import fits 
-import MilneEddington 
-
-#import MilneEddington # This requires that you copied the up-to-date ME version and / or pointed to it.
+from tqdm import tqdm
+import MilneEddington  # This requires that you copied the up-to-date ME version and / or pointed to it.
 
 def data_loader(filename, line): # loads an f0 or a fits file to a num array:
 
