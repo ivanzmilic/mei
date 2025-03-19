@@ -71,7 +71,7 @@ def wfa_blos_estimate(spectrum, wave, line):
 	dI_dll = np.gradient(I) / np.gradient(ll)
 
 	p = np.polyfit(dI_dll,V, 1)
-	print (p)
+	#print (p)
 	k = p[0]
 
 	g = 1.0
@@ -98,6 +98,17 @@ outputfile = sys.argv[7]
 
 stokes, wave = data_loader(spectrafile, wavelengthfile, left, right, skip)
 
-print(wfa_blos_estimate(stokes[100,200], wave, line))
+NX = stokes.shape[0]
+NY = stokes.shape[1]
+Blos = np.zeros([NX,NY])
+
+
+for i in tqdm(range(0,NX)):
+	for j in range (0,NY):
+		Blos[i,j] = wfa_blos_estimate(stokes[i,j], wave, 5172)
+
+kek = fits.PrimaryHDU(Blos)
+kek.writeto(outputfile, overwrite=True) 
+
 
 
