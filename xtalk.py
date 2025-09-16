@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt 
 
-def correct_x_talk_simple(stokescube, plot_results = False):
+def correct_x_talk_simple(stokescube, plot_results = False, silent = True):
 
 	#1 corr xtalk from I, using continuum means
 	mean = np.mean(stokescube[:,:,:,:], axis=(0,1))
@@ -14,11 +14,12 @@ def correct_x_talk_simple(stokescube, plot_results = False):
 
 	#I-V
 	a = np.mean(mean[3][100:230])
-	print(a,'=a')
 	b1 = np.mean(mean[1][100:230])
-	print(b1,'=b1')
 	g1 = np.mean(mean[2][100:230])
-	print(g1,'=g1')
+	if (not silent):
+		print("info::correct_x_talk_simple:: I to V crosstalk is: ", a)
+		print("info::correct_x_talk_simple:: I to Q crosstalk is: ", b1)
+		print("info::correct_x_talk_simple:: I to U crosstalk is: ", g1)
 
 	#def new stk
 	stk_new = np.zeros(stokescube.shape)
