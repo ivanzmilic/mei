@@ -20,13 +20,13 @@ def invert_one_cube(stokescube, wavelengt, nthreads=1, full_output=False):
     stokescube /= Iqs
 
     #noise
-    noise_level = 2.577e-2
+    noise_level = 2.577e-2 # This is contrast with the MiHI paper! (Or maybe not so much because this is for Stokes profiles?)
     noise = np.zeros([4,nl]) # need to change
     noise += noise_level
     noise[1] /= 2.0
     noise[2] /= 2.0
     noise[3] /= 2.0 
-    #apply huge noise to the telluric lines - if there are any
+    #apply huge noise to the telluric lines - if there are any, there are none in this case
 
     #model
     regions = [[wavelengt[:],None]] # select the wavelength
@@ -36,14 +36,15 @@ def invert_one_cube(stokescube, wavelengt, nthreads=1, full_output=False):
 
     model_guess = np.float64([500., 0.1, 0.1, 0.0, 0.04, 100, 0.5, 0.1, 1.0])
     models_guess  = me.repeat_model(model_guess, nx, ny)
-    to_fit = stokescube[:,:,:,:] # !
+    to_fit = stokescube[:,:,:,:] 
 
     #me inversion
     model_out, syn_out, chi2 = me.invert(models_guess, to_fit, noise, nRandom = 10, nIter=25, chi2_thres=0.1, verbose=False)
     model_smoothened = gaussian_filter(model_out,(2,2,0))
 
     model_out, syn_out, chi2 = me.invert_spatially_regularized(model_smoothened, to_fit, noise, mu = 1.0, nIter = 25, \
-            chi2_thres = 0.1, alpha = 3., alphas = np.float64([5,5,5,0.1,0.1,0.1,0.01,0.001,0.001]))
+            chi2_thres = 0.1, alpha = 5., alphas = np.float64([5,5,5,0.1,0.1,0.1,0.01,0.001,0.001]))
+    # Settled on the alpha of 5 - not sure about the other regularizations. might be actually smart to have them stronger. 
     
     if full_output:
         return model_out, syn_out, chi2
@@ -97,7 +98,7 @@ for i in range(number):
     # If it is the first cube, define the output arrays:
     if (i==0):
         model_all = np.zeros([number, model_out.shape[1], model_out.shape[2], model_out.shape[3]], dtype=np.float64)
-        syn_all   = np.zeros([number, syn_out.shape[1], syn_out.shape[2], syn_out.shape[3]], dtype=np.float64)
+        syn_all   = np.zeros([number, syn_out.shape[1], syn_out.shape[2], syn_out.shape[3], syn_out.shape[4]], dtype=np.float64)
         #chi2_all  = np.zeros([number, chi2.shape[0]], dtype=np.float64) 
    
     model_all[i] = model_out[0]
@@ -120,7 +121,7 @@ Blos = model_out[0,:,:,0]*np.cos(model_out[0,:,:,1])
 Btrans = model_out[0,:,:,0]*np.sin(model_out[0,:,:,1])
 phi = model_out[0,:,:,2]
 
-plt.figure(figsize=(10,6))
+plt.figure(figsize=(11,6))
 plt.subplot(2,3,1)
 plt.imshow(Blos.T, origin='lower', cmap='PuOr', vmin=-1000, vmax=1000)
 plt.colorbar()
