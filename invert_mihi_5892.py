@@ -67,22 +67,43 @@ l_end   = 100
 
 print("info::reading the first input file...")
 
-filename = filepath+name_start+str(start)+'..'+str(start+step)+name_end
+# Define the output arrays:
+model_all = 0
+syn_all   = 0
+chi2_all  = 0
 
-stokes = fits.open(filename)[0].data[12:-12, 12:-12,:,:]
-#stokes = fits.open(filename)[0].data
+for i in range(number):
+    if (i==0):
+        filename = filepath+name_start+str(start)+'..'+str(start+step)+name_end
+    else:
+        start += step
+        filename = filepath+name_start+str(start)+'..'+str(start+step)+name_end
 
-stokes = xt.correct_x_talk_simple(stokes, plot_results=False)
-#exit();
-stokes = stokes[:,:,:,l_start:l_end]
+    stokes = fits.open(filename)[0].data[12:-12, 12:-12,:,:]
+    #stokes = fits.open(filename)[0].data
 
-print("info::stokes cube read. shape is: ", stokes.shape)
-ll = fits.open(filename)[1].data[l_start:l_end]
-print("info::wavelength cube read. shape is: ", ll.shape)
+    stokes = xt.correct_x_talk_simple(stokes, plot_results=False)
+    #exit();
+    stokes = stokes[:,:,:,l_start:l_end]
 
-# Invert the cube    
-model_out, syn_out, chi2 = invert_one_cube(stokes, ll, nthreads=n_threads, full_output=True)
-print("info:: model shape is: ", model_out.shape)
+    #print("info::stokes cube read. shape is: ", stokes.shape)
+    ll = fits.open(filename)[1].data[l_start:l_end]
+    #print("info::wavelength cube read. shape is: ", ll.shape)
+
+    # Invert the cube    
+    model_out, syn_out, chi2 = invert_one_cube(stokes, ll, nthreads=n_threads, full_output=True)
+    #print("info:: model shape is: ", model_out.shape)
+
+    # If it is the first cube, define the output arrays:
+    if (i==0):
+        model_all = np.zeros([number, model_out.shape[1], model_out.shape[2], model_out.shape[3]], dtype=np.float64)
+        syn_all   = np.zeros([number, syn_out.shape[1], syn_out.shape[2], syn_out.shape[3]], dtype=np.float64)
+        #chi2_all  = np.zeros([number, chi2.shape[0]], dtype=np.float64) 
+   
+    model_all[i] = model_out[0]
+    syn_all[i]   = syn_out[0]
+    #chi2_all[i]  = chi2[0]
+        
 
 #plot something simple:
 import matplotlib.pyplot as plt 
@@ -131,8 +152,8 @@ plt.savefig("maps.png", bbox_inches='tight')
 
 
 #save results
-hdu1 = fits.PrimaryHDU(model_out[0])
-hdu2 = fits.ImageHDU(syn_out[0])
+hdu1 = fits.PrimaryHDU(model_all)
+hdu2 = fits.ImageHDU(syn_all)
 hdulist = fits.HDUList([hdu1,hdu2])
 hdulist.writeto('sr_inverted.fits',overwrite=True)
 
