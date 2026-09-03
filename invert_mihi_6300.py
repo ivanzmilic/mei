@@ -8,7 +8,7 @@ import xtalk as xt
 
 # Let's write a routine that inverts a single cube of MiHI data
 # using the Milne-Eddington code
-def invert_one_cube(stokescube, wavelength, nthreads=1, lines_to_invert, full_output=False):
+def invert_one_cube(stokescube, wavelength, nthreads=1, lines_to_invert=[6301,6302], full_output=False):
 
     # Extract dimensions
     nx = stokescube.shape[0]
@@ -16,7 +16,7 @@ def invert_one_cube(stokescube, wavelength, nthreads=1, lines_to_invert, full_ou
     nl = stokescube.shape[3] 
 
     # normalize
-    Iqs = np.mean(stokescube[:,:,0,-1])
+    Iqs = np.mean(stokescube[:,:,0,-10:])
     stokescube /= Iqs
 
     #noise
@@ -26,7 +26,9 @@ def invert_one_cube(stokescube, wavelength, nthreads=1, lines_to_invert, full_ou
     noise[1] /= 2.0
     noise[2] /= 2.0
     noise[3] /= 2.0 
-    #apply huge noise to the telluric lines - if there are any, there are none in this case
+    #apply huge noise to the telluric lines:
+    noise[:,100:115] = 1e15
+    noise[:,175:185] = 1e15
 
     #model
     regions = [[wavelength[:],None]] # select the wavelength
@@ -61,32 +63,41 @@ number = int(sys.argv[3])
 n_threads = int(sys.argv[5])
 
 name_start = 'img_fit.'
-name_end  = '.00.00.lr0500.cube.fits'
+name_end  = '.00.00.lr0250.cube.fits'
 step = int (sys.argv[4])
 
-l_start = 40
-l_end   = 100
+l_start = 190
+l_end   = 400
 
-print("info::reading the first input file...")
+# test the last file to see if the range is correct:
+print("info::reading the last input file...")
+last_filename = filepath+name_start+str(start+(number-1)*step)+'..'+str(start+number*step-1)+name_end
+last_stokes = fits.open(last_filename)[0].data[12:-12, 12:-12,:,:]
+print("info::last file read, with size: ", last_stokes.shape)
+
 
 # Define the output arrays:
 model_all = 0
 syn_all   = 0
 chi2_all  = 0
 
+print("info::reading the first input file...")
+
 from tqdm import tqdm
-    
+
 for i in tqdm(range(number)):
     if (i==0):
-        filename = filepath+name_start+str(start)+'..'+str(start+step)+name_end
+        filename = filepath+name_start+str(start)+'..'+str(start+step-1)+name_end
+
     else:
         start += step
-        filename = filepath+name_start+str(start)+'..'+str(start+step)+name_end
+        filename = filepath+name_start+str(start)+'..'+str(start+step-1)+name_end
 
     stokes = fits.open(filename)[0].data[12:-12, 12:-12,:,:]
     #stokes = fits.open(filename)[0].data
+    print("info::read a file, with size: ", stokes.shape)
 
-    stokes = xt.correct_x_talk_simple(stokes, plot_results=False)
+    #stokes = xt.correct_x_talk_simple(stokes, plot_results=False)
     #exit();
     stokes = stokes[:,:,:,l_start:l_end]
 
@@ -95,7 +106,7 @@ for i in tqdm(range(number)):
     #print("info::wavelength cube read. shape is: ", ll.shape)
 
     # Invert the cube    
-    model_out, syn_out, chi2 = invert_one_cube(stokes, ll, nthreads=n_threads, lines_to_invert=[5892,5893], full_output=True)
+    model_out, syn_out, chi2 = invert_one_cube(stokes, ll, nthreads=n_threads, lines_to_invert=[6301,6302], full_output=True)
     #print("info:: model shape is: ", model_out.shape)
 
     # If it is the first cube, define the output arrays:
